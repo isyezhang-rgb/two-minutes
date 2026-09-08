@@ -1,7 +1,7 @@
 {
-  "name": "打卡 · 每天2分钟",
+  "name": "精力账本 · 每天2分钟",
   "short_name": "打卡",
-  "description": "拉伸、阅读、游泳三环打卡，自动统计连胜与洞察",
+  "description": "三环习惯 + 精力电量 + 目标推进，自动统计与周回顾",
   "lang": "zh-CN",
   "start_url": "./",
   "scope": "./",

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>打卡 · 每天2分钟</title>
+<title>打卡 · 精力账本</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -42,6 +42,7 @@
 
   .card { background:#1C1C1E; border-radius:18px; padding:4px 17px; margin-top:17px; }
   .card-title { font-size:14px; font-weight:600; color:rgba(235,235,245,.6); letter-spacing:-0.224px; padding:13px 0 4px; }
+  .mini-label { font-size:12px; color:rgba(235,235,245,.4); letter-spacing:-0.1px; padding:12px 0 2px; }
 
   .row { display:flex; align-items:center; gap:12px; width:100%; padding:13px 0;
          background:none; border:0; border-bottom:1px solid rgba(255,255,255,.08); text-align:left; }
@@ -64,6 +65,22 @@
   .pill:active { transform:scale(.95); }
   .pill.primary { background:#2997ff; color:#fff; }
   .pill.ghost { background:rgba(120,120,128,.24); color:#fff; }
+
+  /* 点选 chips：能勾选，不下拉框 */
+  .chips { display:flex; flex-wrap:wrap; gap:8px; padding:8px 0 14px; }
+  .chip { padding:8px 15px; border-radius:999px; font-size:14px; font-weight:600;
+          border:1.5px solid rgba(255,255,255,.18); background:none; color:rgba(255,255,255,.85);
+          letter-spacing:-0.2px; transition:transform .12s; }
+  .chip:active { transform:scale(.93); }
+  .chip.on { border-color:var(--c); color:var(--c); background:rgba(255,255,255,.07); }
+  .chip.plain { border-color:rgba(255,255,255,.12); color:rgba(235,235,245,.55); font-weight:500; }
+
+  /* 电量条：点一格 */
+  .bat { display:flex; gap:6px; padding:10px 0 14px; }
+  .bat b { flex:1; height:34px; border-radius:9px; border:0; background:rgba(120,120,128,.22); transition:transform .12s; }
+  .bat b:active { transform:scale(.94); }
+  .bat b.on { background:var(--c); box-shadow:inset 0 0 0 1px rgba(255,255,255,.18); }
+  .bat.small b { height:26px; border-radius:7px; }
 
   .week { display:flex; justify-content:space-between; padding:8px 2px 12px; }
   .wcol { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:34px; }
@@ -100,12 +117,28 @@
   .cal-dots { display:flex; gap:2.5px; height:5px; }
   .cdot { width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.14); }
   .cdot.on { background:var(--c); }
+  .ebar { width:16px; height:3px; border-radius:2px; }
 
   .insights { list-style:none; padding:6px 0 12px; }
   .insights li { font-size:15px; line-height:1.5; color:rgba(235,235,245,.78); padding:5px 0 5px 15px;
                  position:relative; letter-spacing:-0.2px; }
   .insights li::before { content:""; position:absolute; left:0; top:.72em; width:5px; height:5px;
                          border-radius:50%; background:#2997ff; }
+
+  .rev-goal { display:flex; align-items:center; gap:10px; padding:11px 0;
+              border-bottom:1px solid rgba(255,255,255,.08); font-size:15px; letter-spacing:-0.2px; }
+  .rev-goal:last-of-type { border-bottom:0; }
+  .rev-goal b { font-weight:600; }
+  .rev-goal span { margin-left:auto; font-size:13px; color:rgba(235,235,245,.5); font-variant-numeric:tabular-nums; }
+  .rdot { width:9px; height:9px; border-radius:50%; flex:none; }
+
+  details.qa { padding:4px 0 14px; }
+  details.qa summary { font-size:14px; color:rgba(235,235,245,.5); cursor:pointer; letter-spacing:-0.1px; }
+  details.qa label { display:block; margin-top:10px; }
+  details.qa label span { font-size:12px; color:rgba(235,235,245,.4); display:block; margin-bottom:5px; }
+  textarea { width:100%; background:rgba(120,120,128,.18); border:1px solid rgba(255,255,255,.1);
+             border-radius:11px; color:#fff; font-size:15px; padding:10px 12px; min-height:42px;
+             resize:none; font-family:inherit; line-height:1.5; }
 
   .fine { font-size:12px; color:rgba(235,235,245,.35); text-align:center; margin-top:30px; line-height:1.6;
           letter-spacing:-0.12px; padding:0 12px; }
@@ -181,7 +214,7 @@
         <circle cx="140" cy="140" r="66"  stroke="rgba(29,255,223,.22)"/>
         <circle id="ring-la"  class="prog" cx="140" cy="140" r="118" stroke="#FA114F"/>
         <circle id="ring-du"  class="prog" cx="140" cy="140" r="92"  stroke="#92E82A"/>
-        <circle id="ring-you" class="prog" cx="140" cy="140" r="66"  stroke="#1DFFDF"/>
+        <circle id="ring-you" class="prog" cx="140" cy="140" r="66" stroke="#1DFFDF"/>
       </g>
     </svg>
   </section>
@@ -209,6 +242,25 @@
 
   <button id="btnTimer" class="pill primary">开始 2 分钟拉伸</button>
 
+  <section class="card" id="energyCard">
+    <div class="card-title">今晚电量 · 点一下就好</div>
+    <div id="batToday" class="bat"></div>
+    <div class="mini-label">昨晚睡眠（可选，按手环大概估）</div>
+    <div id="slpChips" class="chips" style="padding-top:6px"></div>
+    <div class="mini-label">事后电量 · 运动完/学习完顺手一格，验证你的精力节奏</div>
+    <div id="evBox" style="padding-bottom:14px"></div>
+  </section>
+
+  <section class="card" id="goalCard">
+    <div class="card-title">今天推进了哪件大事？点一个就行</div>
+    <div id="goalChips" class="chips"></div>
+    <div id="whyWrap" style="display:none">
+      <div class="mini-label">今天没推进，原因是什么？（给自己看的，不评判）</div>
+      <div id="whyChips" class="chips" style="padding-top:6px"></div>
+    </div>
+    <button id="whyToggle" class="chip plain" style="margin:0 0 14px">今天没推进？点这里记个原因</button>
+  </section>
+
   <section class="card">
     <div class="card-title">本周</div>
     <div id="weekStrip" class="week"></div>
@@ -222,7 +274,7 @@
 
   <section class="card">
     <div class="cal-head">
-      <div class="card-title">月历 · 点任意一天可补勾</div>
+      <div class="card-title">月历 · 点任意一天可补记</div>
       <div style="display:flex;gap:8px">
         <button id="calPrev" class="cal-nav">‹</button>
         <button id="calNext" class="cal-nav">›</button>
@@ -232,12 +284,23 @@
     <div id="calGrid" class="cal-grid"></div>
   </section>
 
+  <section class="card" id="reviewCard">
+    <div class="card-title">周回顾 · 数据都算好了，你只看</div>
+    <div id="reviewBox"></div>
+    <details class="qa">
+      <summary>写两句（可选）：最耗电 / 最回血 / 下周怎么调</summary>
+      <label><span>这周最耗电的是什么</span><textarea id="q1" rows="1"></textarea></label>
+      <label><span>这周最回血的是什么</span><textarea id="q2" rows="1"></textarea></label>
+      <label><span>下周时间表要调的一件事</span><textarea id="q3" rows="1"></textarea></label>
+    </details>
+  </section>
+
   <section class="card">
     <div class="card-title">洞察</div>
     <ul id="insights" class="insights"></ul>
   </section>
 
-  <p class="fine">数据先存本机，联网后静默同步到你自己的 GitHub 私密 gist。<br>换手机/平板/电脑：装好后进「设置」粘贴同一枚 Token 即可接上全部数据。</p>
+  <p class="fine">数据先存本机，联网后静默同步到你自己的 GitHub 私密 gist。<br>习惯、电量、目标、回顾，同一份数据自己同步，换设备进「设置」粘同一枚 Token 即可接上。</p>
 </main>
 
 <div id="scrim" class="scrim"></div>
@@ -277,13 +340,36 @@ var HABITS = {
   you: { name:"游泳", color:"#1DFFDF" }
 };
 var HLIST = ["la","du","you"];
+/* 精力账本新增字段：全部点选，不手填 */
+var EN_COLORS = ["#FA114F","#FF9F0A","#FFD60A","#92E82A","#1DFFDF"];
+var SLEEP = ["<6h","6-7h","7-8h","8h+"];
+var GOALS = {
+  pm:   { n:"作品集", c:"#2997FF" },
+  job:  { n:"跳槽",   c:"#FF9F0A" },
+  ins:  { n:"保险",   c:"#BF5AF2" },
+  pen:  { n:"养老金", c:"#64D2FF" },
+  rest: { n:"休息日", c:"rgba(235,235,245,.5)" }
+};
+var GOAL_LIST = ["pm","job","ins","pen","rest"];
+var WHY = {
+  low:       { n:"没电了", c:"#FA114F" },
+  procrast:  { n:"拖延了", c:"#FF9F0A" },
+  notime:    { n:"没时间", c:"#FFD60A" },
+  forgot:    { n:"忘了",   c:"#BF5AF2" },
+  other:     { n:"别的",   c:"rgba(235,235,245,.5)" }
+};
+var WHY_LIST = ["low","procrast","notime","forgot","other"];
+var EV = { swim:"游泳后", str:"拉伸后", learn:"学习块后", cook:"大菜后", out:"外出后" };
+var EV_LIST = ["swim","str","learn","cook","out"];
 var GIST_ID = "41f02272f633a8bdb3e24cbd3e145b41"; // 数据同步用私密 gist
 var LS_KEY = "tm.v1";
 var DAY = 86400000;
 
-var S = { days:{}, meta:{ goalYou:[4, Date.now()] }, cfg:{ token:"" }, lastSync:0 };
+var S = { days:{}, meta:{ goalYou:[4, Date.now()], review:{} }, cfg:{ token:"" }, lastSync:0 };
 var viewYM = null;
 var dayK = null;
+var evPick = null;      // 主页正在选电量的事件类型
+var whyOpen = false;    // 主页原因区是否展开
 var $ = function(s){ return document.querySelector(s); };
 
 function p2(n){ return String(n).padStart(2,"0"); }
@@ -301,6 +387,7 @@ function load(){
       var o = JSON.parse(raw);
       S.days = o.days || {};
       if(o.meta) S.meta = o.meta;
+      if(!S.meta.review) S.meta.review = {};
       if(o.cfg) S.cfg = o.cfg;
       S.lastSync = o.lastSync || 0;
     }
@@ -317,15 +404,20 @@ function load(){
 }
 function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
 
+/* ---------- 通用读写：习惯 + 电量 + 睡眠 + 目标 + 原因，统一 LWW ---------- */
+function getArr(k,f){ var d=S.days[k]; return (d&&d[f])?d[f]:[0,0]; }
+function setArr(k,f,v){
+  var d=S.days[k]; if(!d){ d=S.days[k]={}; }
+  d[f]=[v,Date.now()];
+  save(); render(); queueSync();
+}
 function getCheck(k,h){ var d=S.days[k]; return (d&&d[h])?d[h]:[0,0]; }
 function setCheck(k,h,v){
   if(getCheck(k,h)[0]===v) return;
-  var d=S.days[k]; if(!d){ d=S.days[k]={}; }
-  d[h]=[v,Date.now()];
-  save(); render(); queueSync();
+  setArr(k,h,v);
 }
 function toggleHabit(k,h){ setCheck(k,h,getCheck(k,h)[0]?0:1); }
-function goal(){ return (S.meta.goalYou&&S.meta.goalYou[0])||4; }
+function goalYou(){ return (S.meta.goalYou&&S.meta.goalYou[0])||4; }
 
 function mondayOf(t){ var d=new Date(t); var off=(d.getDay()+6)%7; d.setDate(d.getDate()-off); d.setHours(0,0,0,0); return d.getTime(); }
 function weekYou(){ var m=mondayOf(Date.now()); var n=0; for(var i=0;i<7;i++){ if(getCheck(keyOf(new Date(m+i*DAY)),"you")[0]) n++; } return n; }
@@ -377,6 +469,58 @@ function totalDays(){
   }).length;
 }
 
+/* ---------- 精力统计 ---------- */
+function avgEn(fromOff,toOff){ // 含 from 不含 to，按天偏移
+  var s=0,n=0;
+  for(var i=fromOff;i<toOff;i++){
+    var v=getArr(keyOf(new Date(Date.now()-i*DAY)),"en")[0];
+    if(v){ s+=v; n++; }
+  }
+  return n?{a:s/n, n:n}:null;
+}
+function goalStat(gid){ // 本周次数 + 距上次推进天数
+  var mon=mondayOf(Date.now()); var off=(new Date().getDay()+6)%7; var cnt=0;
+  for(var i=0;i<=off;i++){ if(getArr(keyOf(new Date(mon+i*DAY)),"goal")[0]===gid) cnt++; }
+  var d=new Date(); var last=-1;
+  for(i=0;i<365;i++){ if(getArr(keyOf(d),"goal")[0]===gid){ last=i; break; } d.setDate(d.getDate()-1); }
+  return {cnt:cnt, last:last};
+}
+function lightColor(last){
+  if(last<0) return "#FA114F";
+  if(last<=2) return "#92E82A";
+  if(last<=7) return "#FFD60A";
+  return "#FA114F";
+}
+function evAvg(type,withinDays){
+  var s=0,n=0;
+  for(var i=0;i<withinDays;i++){
+    var d=S.days[keyOf(new Date(Date.now()-i*DAY))];
+    if(d&&d.ev&&d.ev[type]&&d.ev[type][0]){ s+=d.ev[type][0]; n++; }
+  }
+  return n?{a:s/n, n:n}:null;
+}
+function swimContrast(withinDays){ // 游泳日 vs 非游泳日 晚间电量
+  var s1=0,n1=0,s0=0,n0=0;
+  for(var i=0;i<withinDays;i++){
+    var k=keyOf(new Date(Date.now()-i*DAY));
+    var v=getArr(k,"en")[0]; if(!v) continue;
+    if(getCheck(k,"you")[0]){ s1+=v; n1++; } else { s0+=v; n0++; }
+  }
+  if(n1>=2&&n0>=2) return { swim:s1/n1, rest:s0/n0 };
+  return null;
+}
+function worstGoalLine(){
+  var worst=null;
+  ["pm","job","ins","pen"].forEach(function(g){
+    var st=goalStat(g);
+    if(st.last<0||st.last>=3){
+      var eff=st.last<0?999:st.last; // 从没推过的排最前
+      if(!worst||eff>worst.eff) worst={g:g,last:st.last,eff:eff};
+    }
+  });
+  return worst;
+}
+
 var RING = { la:{r:118}, du:{r:92}, you:{r:66} };
 function initRingGeom(){
   for(var h in RING){
@@ -387,10 +531,65 @@ function initRingGeom(){
   }
 }
 function ringP(h){
-  if(h==="you") return Math.min(1, weekYou()/goal());
+  if(h==="you") return Math.min(1, weekYou()/goalYou());
   return getCheck(todayKey(),h)[0]?1:0;
 }
 
+/* ---------- 小组件渲染 ---------- */
+function batHTML(cur,cls){
+  var s="";
+  for(var i=1;i<=5;i++){
+    s+='<b data-v="'+i+'" class="'+(cur===i?"on":"")+'" style="--c:'+EN_COLORS[i-1]+'"></b>';
+  }
+  return s;
+}
+function setEv(k,type,v){
+  var d=S.days[k]; if(!d){ d=S.days[k]={}; }
+  if(!d.ev) d.ev={};
+  d.ev[type]=[v,Date.now()];
+  save(); render(); queueSync();
+}
+function bindBat(box,k,evType){
+  box.querySelectorAll("b").forEach(function(el){
+    el.addEventListener("click",function(){
+      var v=+el.getAttribute("data-v");
+      var cur;
+      if(evType){
+        var d=S.days[k];
+        cur=(d&&d.ev&&d.ev[evType])?d.ev[evType][0]:0;
+        evPick=null;
+        setEv(k,evType,cur===v?0:v);
+      }else{
+        cur=getArr(k,"en")[0];
+        setArr(k,"en",cur===v?0:v);
+      }
+      buzz(10);
+      if(dayK===k) renderDaySheet(k);
+    });
+  });
+}
+function chipsHTML(list,dict,cur){
+  var s="";
+  list.forEach(function(id){
+    var o=dict?dict[id]:{n:id,c:"#2997FF"};
+    if(typeof o==="string") o={n:o,c:"#2997FF"}; // 兼容纯文本字典
+    s+='<button type="button" class="chip'+(cur===id?" on":"")+'" data-v="'+id+'" style="--c:'+o.c+'">'+o.n+'</button>';
+  });
+  return s;
+}
+function bindChips(box,k,field,dict,toggleClear){
+  box.querySelectorAll(".chip").forEach(function(el){
+    el.addEventListener("click",function(){
+      var v=el.getAttribute("data-v");
+      var cur=getArr(k,field)[0];
+      var nv=(toggleClear&&cur===v)?0:v;
+      setArr(k,field,nv); buzz(8);
+      if(dayK===k) renderDaySheet(k);
+    });
+  });
+}
+
+/* ---------- 主渲染 ---------- */
 function render(){
   var t=new Date();
   $("#dateTitle").textContent=(t.getMonth()+1)+"月"+t.getDate()+"日";
@@ -404,10 +603,50 @@ function render(){
     $("#chk-"+h).classList.toggle("done",!!on);
   });
   $("#val-you").textContent=weekYou();
-  $("#goal-you").textContent="/"+goal();
-  $("#chk-you").classList.toggle("done", weekYou()>=goal());
+  $("#goal-you").textContent="/"+goalYou();
+  $("#chk-you").classList.toggle("done", weekYou()>=goalYou());
   $("#btnTimer").style.display=getCheck(todayKey(),"la")[0]?"none":"";
-  renderWeek(); renderStreaks(); renderCal(); renderInsights();
+  renderEnergy(); renderGoal(); renderWeek(); renderStreaks();
+  renderCal(); renderReview(); renderInsights();
+}
+
+function renderEnergy(){
+  var k=todayKey();
+  var bat=$("#batToday");
+  bat.innerHTML=batHTML(getArr(k,"en")[0]);
+  bindBat(bat,k);
+  var slp=$("#slpChips");
+  slp.innerHTML=chipsHTML(SLEEP,null,getArr(k,"slp")[0]||null);
+  bindChips(slp,k,"slp",null,true);
+  var box=$("#evBox");
+  if(evPick){
+    var v=(S.days[k]&&S.days[k].ev&&S.days[k].ev[evPick])?S.days[k].ev[evPick][0]:0;
+    box.innerHTML='<div class="mini-label" style="padding-top:2px">'+EV[evPick]+' · 电量几格？</div>'
+      + '<div class="bat small" id="evBat">'+batHTML(v)+'</div>'
+      + '<button type="button" class="chip plain" id="evCancel">取消</button>';
+    bindBat($("#evBat"),k,evPick);
+    $("#evCancel").addEventListener("click",function(){ evPick=null; renderEnergy(); });
+  }else{
+    box.innerHTML='<div class="chips" style="padding-top:6px">'+EV_LIST.map(function(id){
+      var d=S.days[k]; var has=d&&d.ev&&d.ev[id]&&d.ev[id][0];
+      return '<button type="button" class="chip'+(has?" on":"")+'" data-v="'+id+'" style="--c:'+(has?EN_COLORS[d.ev[id][0]-1]:"rgba(255,255,255,.18)")+'">'+EV[id]+(has?" "+d.ev[id][0]:"")+'</button>';
+    }).join("")+'</div>';
+    box.querySelectorAll(".chip").forEach(function(el){
+      el.addEventListener("click",function(){ evPick=el.getAttribute("data-v"); renderEnergy(); });
+    });
+  }
+}
+
+function renderGoal(){
+  var k=todayKey();
+  var gc=$("#goalChips");
+  gc.innerHTML=chipsHTML(GOAL_LIST,GOALS,getArr(k,"goal")[0]||null);
+  bindChips(gc,k,"goal",GOALS,true);
+  $("#whyWrap").style.display=whyOpen?"":"none";
+  $("#whyToggle").style.display=whyOpen?"none":"";
+  var wc=$("#whyChips");
+  wc.innerHTML=chipsHTML(WHY_LIST,WHY,getArr(k,"why")[0]||null);
+  bindChips(wc,k,"why",WHY,true);
 }
 
 function renderWeek(){
@@ -432,7 +671,7 @@ function renderStreaks(){
   $("#st-du").textContent=streak("du");
   $("#st-du-b").textContent="最长 "+bestStreak("du")+" 天";
   var wy=weekYou();
-  $("#st-you").textContent=wy+"/"+goal();
+  $("#st-you").textContent=wy+"/"+goalYou();
   var lc=weekCounts("you");
   $("#st-you-b").textContent="上周同期 "+lc.last+" 次";
 }
@@ -440,7 +679,7 @@ function renderStreaks(){
 function renderCal(){
   var y=viewYM[0], m=viewYM[1];
   var head=document.querySelector(".cal-head .card-title");
-  head.textContent=(y!==new Date().getFullYear()? y+"年" : "")+(m+1)+"月 · 点任意一天可补勾";
+  head.textContent=(y!==new Date().getFullYear()? y+"年" : "")+(m+1)+"月 · 点任意一天可补记";
   var grid=$("#calGrid"); grid.innerHTML="";
   var off=(new Date(y,m,1).getDay()+6)%7;
   for(var i=0;i<off;i++){ var sp=document.createElement("span"); grid.appendChild(sp); }
@@ -454,11 +693,50 @@ function renderCal(){
     var dots=HLIST.map(function(h){
       return '<i class="cdot'+(getCheck(k,h)[0]?' on':'')+'" style="--c:'+HABITS[h].color+'"></i>';
     }).join("");
-    b.innerHTML='<span class="cal-d">'+d+'</span><span class="cal-dots">'+dots+'</span>';
+    var en=getArr(k,"en")[0];
+    var bar=en?'<i class="ebar" style="background:'+EN_COLORS[en-1]+'"></i>':'<i class="ebar"></i>';
+    b.innerHTML='<span class="cal-d">'+d+'</span><span class="cal-dots">'+dots+'</span>'+bar;
     if(k<=tk){ (function(kk){ b.addEventListener("click",function(){ openDay(kk); }); })(k); }
     else { b.disabled=true; }
     grid.appendChild(b);
   }
+}
+
+function renderReview(){
+  var box=$("#reviewBox"); var html="";
+  var names={pm:"作品集",job:"跳槽",ins:"保险",pen:"养老金"};
+  ["pm","job","ins","pen"].forEach(function(g){
+    var st=goalStat(g);
+    var c=lightColor(st.last);
+    var desc=st.last<0?"还没推过":(st.last===0?"今天刚推进":("距上次 "+st.last+" 天"));
+    html+='<div class="rev-goal"><i class="rdot" style="background:'+c+'"></i><b>'+names[g]+'</b>'
+        + '<span>本周 '+st.cnt+' 次 · '+desc+'</span></div>';
+  });
+  var w=avgEn(0,7), lw=avgEn(7,14);
+  var ul=[];
+  if(w) ul.push("本周均电量 "+w.a.toFixed(1)+" 格（"+w.n+" 天）"+(lw?"，上周 "+lw.a.toFixed(1):""));
+  var sc=swimContrast(28);
+  if(sc){
+    var diff=sc.swim-sc.rest;
+    var v=diff<=-1?"——「运动完动不了」实锤了，游泳日就该免修":(diff>=0.5?"——其实游完的晚上没那么糟":"——两边差不多，游泳日安排照旧");
+    ul.push("游泳日晚上均电量 "+sc.swim.toFixed(1)+"，不游日 "+sc.rest.toFixed(1)+" "+v);
+  }
+  var ea=evAvg("learn",28), sa=evAvg("swim",28);
+  if(ea||sa){
+    var parts=[];
+    if(sa) parts.push("游泳后 "+sa.a.toFixed(1));
+    if(ea) parts.push("学习块后 "+ea.a.toFixed(1));
+    ul.push("事后电量（近4周）："+parts.join(" · "));
+  }
+  var wg=worstGoalLine();
+  if(wg) ul.push(wg.last<0
+    ? "「"+names[wg.g]+"」还没开始推进——先给它一个 10 分钟的最小动作"
+    : "「"+names[wg.g]+"」已经 "+wg.last+" 天没推进——下周给它一个 10 分钟的最小动作");
+  if(ul.length) html+='<ul class="insights" style="padding-bottom:2px">'+ul.slice(0,4).map(function(s){return "<li>"+s+"</li>";}).join("")+"</ul>";
+  box.innerHTML=html;
+  var wk="w"+mondayOf(Date.now());
+  var rev=(S.meta.review&&S.meta.review[wk])||{};
+  $("#q1").value=rev.q1||""; $("#q2").value=rev.q2||""; $("#q3").value=rev.q3||"";
 }
 
 function renderInsights(){
@@ -468,12 +746,14 @@ function renderInsights(){
   if(laB>0) out.push("拉伸最长连胜 "+laB+" 天"+(laS===laB&&laS>=2?"，正在刷新纪录":""));
   var wc=weekCounts("la");
   if(wc.last>0||wc.this>0) out.push("本周拉伸 "+wc.this+" 次，上周同期 "+wc.last+" 次");
-  out.push("本周游泳 "+weekYou()+"/"+goal()+" 次");
+  out.push("本周游泳 "+weekYou()+"/"+goalYou()+" 次");
   var wd=weekdayWorst("la");
   if(wd) out.push("近四周里周"+wd+"最容易断拉伸——那天把2分钟挂在等饭时间");
   var fr=fullRun();
   if(fr>=2) out.push("已连续 "+fr+" 天「拉伸+阅读」双勾");
-  $("#insights").innerHTML=out.slice(0,5).map(function(s){ return "<li>"+s+"</li>"; }).join("");
+  var en28=avgEn(0,28);
+  if(en28&&en28.n>=4) out.push("近4周电量均值 "+en28.a.toFixed(1)+" 格，记录 "+en28.n+" 天");
+  $("#insights").innerHTML=out.slice(0,6).map(function(s){ return "<li>"+s+"</li>"; }).join("");
 }
 
 /* ---------- sheets ---------- */
@@ -484,27 +764,59 @@ function closeSheets(){
   dayK=null;
 }
 
-function openDay(k){
-  dayK=k;
-  $("#dayTitle").textContent=fmtCN(k)+" 周"+weekChar(new Date(keyTime(k)));
-  var box=$("#dayRows"); box.innerHTML="";
+function renderDaySheet(k){
+  var box=$("#dayRows");
+  var d=S.days[k]||{};
+  var html="";
   HLIST.forEach(function(h){
-    var row=document.createElement("div"); row.className="drow";
-    row.innerHTML='<span class="drow-name"><i class="dot" style="background:'+HABITS[h].color+'"></i>'
+    var on=d[h]&&d[h][0];
+    html+='<div class="drow"><span class="drow-name"><i class="dot" style="background:'+HABITS[h].color+'"></i>'
       + HABITS[h].name+(h==="you"?'<small>计入当周</small>':'')+'</span>'
-      + '<label class="sw" style="--c:'+HABITS[h].color+'"><input type="checkbox"'
-      + (getCheck(k,h)[0]?' checked':'')+'><span class="knob-track"></span><span class="knob"></span></label>';
-    row.querySelector("input").addEventListener("change",function(e){
-      setCheck(k,h,e.target.checked?1:0); buzz(8);
-    });
-    box.appendChild(row);
+      + '<label class="sw" style="--c:'+HABITS[h].color+'"><input type="checkbox" data-h="'+h+'"'
+      + (on?' checked':'')+'><span class="knob-track"></span><span class="knob"></span></label></div>';
   });
+  html+='<div class="mini-label" style="padding-top:14px">当晚电量</div><div class="bat small" id="dsBat">'+batHTML(getArr(k,"en")[0])+'</div>';
+  html+='<div class="mini-label">昨晚/当晚睡眠</div><div class="chips" id="dsSlp" style="padding-top:6px">'+chipsHTML(SLEEP,null,getArr(k,"slp")[0]||null)+'</div>';
+  html+='<div class="mini-label">推进了哪件大事</div><div class="chips" id="dsGoal" style="padding-top:6px">'+chipsHTML(GOAL_LIST,GOALS,getArr(k,"goal")[0]||null)+'</div>';
+  if(!getArr(k,"goal")[0]){
+    html+='<div class="mini-label">没推进的原因</div><div class="chips" id="dsWhy" style="padding-top:6px">'+chipsHTML(WHY_LIST,WHY,getArr(k,"why")[0]||null)+'</div>';
+  }
+  html+='<div class="mini-label">事后电量</div><div class="chips" id="dsEv" style="padding-top:6px">'
+    + EV_LIST.map(function(id){
+        var has=d.ev&&d.ev[id]&&d.ev[id][0];
+        return '<button type="button" class="chip'+(has?" on":"")+'" data-v="'+id+'" style="--c:'+(has?EN_COLORS[d.ev[id][0]-1]:"rgba(255,255,255,.18)")+'">'+EV[id]+(has?" "+d.ev[id][0]:"")+'</button>';
+      }).join("")+'</div>';
+  if(evPick){
+    var v=(d.ev&&d.ev[evPick])?d.ev[evPick][0]:0;
+    html+='<div class="mini-label">'+EV[evPick]+' · 几格？</div><div class="bat small" id="dsEvBat">'+batHTML(v)+'</div>';
+  }
+  box.innerHTML=html;
+  box.querySelectorAll("input[type=checkbox]").forEach(function(inp){
+    inp.addEventListener("change",function(e){
+      setCheck(k,e.target.getAttribute("data-h"),e.target.checked?1:0); buzz(8);
+      renderDaySheet(k);
+    });
+  });
+  bindBat($("#dsBat"),k);
+  bindChips($("#dsSlp"),k,"slp",null,true);
+  bindChips($("#dsGoal"),k,"goal",GOALS,true);
+  if($("#dsWhy")) bindChips($("#dsWhy"),k,"why",WHY,true);
+  $("#dsEv").querySelectorAll(".chip").forEach(function(el){
+    el.addEventListener("click",function(){ evPick=el.getAttribute("data-v"); renderDaySheet(k); });
+  });
+  if($("#dsEvBat")) bindBat($("#dsEvBat"),k,evPick);
+}
+
+function openDay(k){
+  dayK=k; evPick=null;
+  $("#dayTitle").textContent=fmtCN(k)+" 周"+weekChar(new Date(keyTime(k)));
+  renderDaySheet(k);
   openSheet($("#daySheet"));
 }
 
 function openSettings(){
   $("#tokenInput").value=S.cfg.token||"";
-  $("#goalInput").value=goal();
+  $("#goalInput").value=goalYou();
   $("#setStatus").textContent=S.cfg.token?("上次同步："+(S.lastSync?new Date(S.lastSync).toLocaleString("zh-CN",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"尚未同步")):"未配置同步（仅存本机）";
   openSheet($("#settingsSheet"));
 }
@@ -547,20 +859,35 @@ function setSync(t){ $("#syncStatus").textContent=t; }
 
 function mergeData(remote, local){
   var out={ days:JSON.parse(JSON.stringify(remote.days||{})), meta:JSON.parse(JSON.stringify(remote.meta||{})) };
+  if(!out.meta.review) out.meta.review={};
+  var FIELDS=["la","du","you","en","slp","goal","why"];
   var keys={};
   Object.keys(out.days).forEach(function(k){ keys[k]=1; });
   Object.keys(local.days||{}).forEach(function(k){ keys[k]=1; });
   Object.keys(keys).forEach(function(k){
     var a=out.days[k]||{}; var b=(local.days||{})[k]||{};
     var m=Object.assign({},a);
-    HLIST.forEach(function(h){
-      var x=a[h], y=b[h];
-      if(y&&(!x||(y[1]||0)>=(x[1]||0))) m[h]=y;
+    FIELDS.forEach(function(f){
+      var x=a[f], y=b[f];
+      if(y&&(!x||(y[1]||0)>=(x[1]||0))) m[f]=y;
     });
+    var evA=a.ev||{}, evB=b.ev||{};
+    var evM=Object.assign({},evA);
+    Object.keys(evB).forEach(function(t){
+      var x=evA[t], y=evB[t];
+      if(!x||(y[1]||0)>=(x[1]||0)) evM[t]=y;
+    });
+    if(Object.keys(evM).length) m.ev=evM;
     out.days[k]=m;
   });
   var gl=out.meta.goalYou, ll=local.meta&&local.meta.goalYou;
   if(ll&&(!gl||(ll[1]||0)>=(gl[1]||0))) out.meta.goalYou=ll;
+  var rA=out.meta.review||{}, rB=(local.meta&&local.meta.review)||{};
+  Object.keys(rB).forEach(function(wk){
+    var x=rA[wk], y=rB[wk];
+    if(!x||(y.ts||0)>=(x.ts||0)) rA[wk]=y;
+  });
+  out.meta.review=rA;
   return out;
 }
 
@@ -582,7 +909,7 @@ function syncNow(manual){
     var remote=null;
     if(raw){ try{ remote=JSON.parse(raw); }catch(e){} }
     var merged=mergeData(remote||{days:{},meta:{}},S);
-    S.days=merged.days; S.meta=merged.meta; save(); render();
+    S.days=merged.days; S.meta=merged.meta; save();
     var needPush=manual||JSON.stringify({days:merged.days,meta:merged.meta})!==JSON.stringify(remote||{});
     payload={days:merged.days,meta:merged.meta};
     if(!needPush){
@@ -611,7 +938,7 @@ function syncNow(manual){
 
 /* ---------- events ---------- */
 function bind(){
-  document.querySelectorAll(".row").forEach(function(row){
+  document.querySelectorAll("#rowsCard .row").forEach(function(row){
     row.addEventListener("click",function(){
       toggleHabit(todayKey(),row.getAttribute("data-h")); buzz(8);
     });
@@ -622,6 +949,7 @@ function bind(){
     stopTimer(); setCheck(todayKey(),"la",1);
     $("#timerOverlay").classList.add("hidden"); toast("已勾上，环满了");
   });
+  $("#whyToggle").addEventListener("click",function(){ whyOpen=true; renderGoal(); });
   $("#btnSettings").addEventListener("click",openSettings);
   $("#setClose").addEventListener("click",closeSheets);
   $("#dayClose").addEventListener("click",closeSheets);
@@ -639,7 +967,7 @@ function bind(){
     var g=parseInt($("#goalInput").value,10);
     S.cfg.token=tk;
     if(g>=1&&g<=7) S.meta.goalYou=[g,Date.now()];
-    save(); render();
+    save();
     closeSheets();
     if(tk){ syncNow(true); toast("已保存，开始同步"); }
     else toast("已保存（未配 Token，仅存本机）");
@@ -650,6 +978,16 @@ function bind(){
       navigator.clipboard.writeText(data).then(function(){ toast("数据已复制到剪贴板"); },
         function(){ toast("复制失败"); });
     } else toast("此环境不支持复制");
+  });
+  ["q1","q2","q3"].forEach(function(id){
+    document.getElementById(id).addEventListener("input",function(){
+      var wk="w"+mondayOf(Date.now());
+      if(!S.meta.review) S.meta.review={};
+      var r=S.meta.review[wk]||{};
+      r[id]=document.getElementById(id).value; r.ts=Date.now();
+      S.meta.review[wk]=r;
+      save(); queueSync(); /* 不重渲染，避免打断输入 */
+    });
   });
   document.addEventListener("visibilitychange",function(){
     if(document.hidden&&S.cfg.token&&GIST_ID) syncNow(false);
